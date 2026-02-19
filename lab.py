@@ -56,7 +56,7 @@ def make_new_game(level_description):
         if items not in res.keys():
             res[items] = set()
 
-    return res, size
+    return (res, size)
 
             
 
@@ -79,9 +79,9 @@ def victory_check(game):
 
 def copy_set(game):
     dic = {}
-    for key, value in game.items():
+    for key, value in game[0].items():
         dic[key] = value.copy()
-    return dic
+    return dic, game[1]
 
 def step_game(game, direction):
     """
@@ -94,12 +94,12 @@ def step_game(game, direction):
     This function should not mutate its input.
     Hint: you may want to use the DIRECTION_VECTOR
     """
-    copy_game = copy_set(game[0])
+    copy_game = copy_set(game)
     size = game[1]
-    pos = copy_game['player'].copy()
+    pos = copy_game[0]['player'].copy()
     pos = pos.pop()
-    walls = copy_game['wall']
-    computers = copy_game['computer']
+    walls = copy_game[0]['wall']
+    computers = copy_game[0]['computer']
     row,col = DIRECTION_VECTOR[direction]
     newPos = (pos[0] + row, pos[1]+ col)
     t = (newPos[0] + row, newPos[1] + col)
@@ -110,11 +110,12 @@ def step_game(game, direction):
             if(newPos in computers):
                 if(t in walls or t in computers):
                     return copy_game
-                copy_game['computer'].remove(newPos)
-                copy_game['computer'].add(t)
+                copy_game[0]['computer'].remove(newPos)
+                copy_game[0]['computer'].add(t)
         if(newPos not in computers):
-            copy_game['player'] = newPos
-    return copy_game, size
+            copy_game[0]['player'] = set()
+            copy_game[0]['player'].add(newPos)
+    return copy_game
 
 
 def dump_game(game):
@@ -130,10 +131,10 @@ def dump_game(game):
     """
     dic, size = game
     res = []
-    walls = dic['wall']
-    computer = dic['computer']
-    target = dic['target']
-    player = dic['player']
+    walls = set(dic['wall'])
+    computer = set(dic['computer'])
+    target = set(dic['target'])
+    player = set(dic['player'])
     for i in range(size[0]):
         tmp = []
         for j in range(size[1]):
@@ -151,27 +152,86 @@ def dump_game(game):
     return res
 
 
+def generate_hashable(game):
+    res = []
+    players = []
+    computers = []
+    for player in game[0]['player']:
+        players.append(player)
+    for computer in game[0]['computer']:
+        computers.append(computer)
+    player = tuple(player)
+    computers = tuple(computers)
+    res.append(player)
+    res.append(computers)
+    return tuple(res)
+
+
+
+def generate_board(game, func):
+    if(func(game)):
+        return (game,)
+    agenda = [(game,)]
+    visited = {(generate_hashable(game))}
+    while agenda:
+        g = agenda.pop(0)
+        terminal = g[-1]
+        for direction in DIRECTION_VECTOR:
+            new = step_game(terminal, direction)
+            if generate_hashable(new) not in visited:
+                new_path = g + (new,)
+                if(func(new)):
+                    return new_path
+                agenda.append(new_path)
+                visited.add(generate_hashable(new))
+    return None
+
+
+def generate_steps(seq):
+    if(seq == None):
+        return None
+    path = []
+    for i in range(len(seq) - 1):
+        check = seq[i]
+        for direction in DIRECTION_VECTOR:
+            step = step_game(check, direction)
+            if(step == seq[i + 1]):
+                path.append(direction)
+                break
+    return path
+
 
 
 def solve_puzzle(game):
     """
     Given a game representation (of the form returned from make_new_game), find
     a solution.
-
     Return a list of strings representing the shortest sequence of moves ("up",
     "down", "left", and "right") needed to reach the victory condition.
 
     If the given level cannot be solved, return None. This function should not mutate
     the input game.
     """
-    raise NotImplementedError
+    copy_game = copy_set(game)
+    seq = generate_board(copy_game, victory_check)
+    path = generate_steps(seq)
+    return path
 
 
 if __name__ == "__main__":
     level = [
-        [[], ['wall'], ['computer']],
-        [['target', 'player'], ['computer'], ['target']],
-    ]
+  [[], [], [], ["wall"], ["wall"], ["wall"], ["wall"]],
+  [[], [], [], ["wall"], [], [], ["wall"]],
+  [[], [], [], ["wall"], ["player"], [], ["wall"]],
+  [["wall"], ["wall"], ["wall"], ["wall"], [], ["target", "computer"], ["wall"]],
+  [["wall"], [], [], [], [], ["target", "computer"], ["wall"]],
+  [["wall"], [], ["wall"], [], [], ["target", "computer"], ["wall"]],
+  [["wall"], [], [], [], [], ["wall"], ["wall"]],
+  [["wall"], ["wall"], ["wall"], ["wall"], ["wall"], ["wall"], []]
+]
+
+
+
     res = make_new_game(level)
-    print(res)
-    
+    print(solve_puzzle(res))
+   

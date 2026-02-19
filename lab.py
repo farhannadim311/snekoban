@@ -71,7 +71,9 @@ def victory_check(game):
     A game with no computers or targets is unwinnable. This function should not mutate
     the input game.
     """
-    if('target' not in game[0] or 'computer' not in game[0]):
+    target = game[0]['target']
+    computer = game[0]['computer']
+    if(len(target) == 0 or len(computer) == 0):
         return False
     return game[0]['computer'] == game[0]['target']
 

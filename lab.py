@@ -37,24 +37,22 @@ def make_new_game(level_description):
     return will be used as input to the other functions. This function should not
     mutate the level_description.
     """
-    #make a tuple of tuples of tuple containing strings?
-    #for item in level_description:
-        #print(item)
     
-    res = ()
-    for row in level_description:
-        tmp = ()
-        for items in row:
-            i = ()
-            for item in items:
-                print(item)
-                i += tuple(item)
-            tmp += i
-        res += tmp
+    res = {}
+    row = len(level_description)
+    col = len(level_description[0])
+    for i in range(row):
+        for j in range(col):
+            cell = level_description[i][j]
+            for contents in cell:
+                if(contents not in res):
+                    res[contents] = set()
+                    res[contents].add((i,j))
+                else:
+                    res[contents].add((i, j))
     return res
 
             
-
 
 
 
@@ -67,8 +65,8 @@ def victory_check(game):
     A game with no computers or targets is unwinnable. This function should not mutate
     the input game.
     """
-    raise NotImplementedError
-
+    if('target' not in game or 'computer' not in game):
+        return False
 
 def step_game(game, direction):
     """
@@ -113,8 +111,11 @@ def solve_puzzle(game):
 
 
 if __name__ == "__main__":
-    level = [
-        [[], ['wall'], ['computer']],
-        [['target', 'player'], ['computer'], ['target']],
-    ]
-    print(make_new_game(level))
+    #level = [
+        #[[], ['wall'], ['computer']],
+        #[['target', 'player'], ['computer'], ['target']],
+    #]
+    #res = make_new_game(level)
+    #for row in res:
+        #print(row)
+    pass

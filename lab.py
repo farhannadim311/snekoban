@@ -41,6 +41,8 @@ def make_new_game(level_description):
     res = {}
     row = len(level_description)
     col = len(level_description[0])
+    size = (row, col)
+    things = {'wall', 'computer', 'target', 'player'}
     for i in range(row):
         for j in range(col):
             cell = level_description[i][j]
@@ -50,7 +52,11 @@ def make_new_game(level_description):
                     res[contents].add((i,j))
                 else:
                     res[contents].add((i, j))
-    return res
+    for items in things:
+        if items not in res.keys():
+            res[items] = set()
+
+    return res, size
 
             
 
@@ -65,8 +71,15 @@ def victory_check(game):
     A game with no computers or targets is unwinnable. This function should not mutate
     the input game.
     """
-    if('target' not in game or 'computer' not in game):
+    if('target' not in game[0] or 'computer' not in game[0]):
         return False
+    return game[0]['computer'] == game[0]['target']
+
+def copy_set(game):
+    dic = {}
+    for key, value in game.items():
+        dic[key] = value.copy()
+    return dic
 
 def step_game(game, direction):
     """
@@ -79,7 +92,27 @@ def step_game(game, direction):
     This function should not mutate its input.
     Hint: you may want to use the DIRECTION_VECTOR
     """
-    raise NotImplementedError
+    copy_game = copy_set(game[0])
+    size = game[1]
+    pos = copy_game['player'].copy()
+    pos = pos.pop()
+    walls = copy_game['wall']
+    computers = copy_game['computer']
+    row,col = DIRECTION_VECTOR[direction]
+    newPos = (pos[0] + row, pos[1]+ col)
+    t = (newPos[0] + row, newPos[1] + col)
+    if(0 <= newPos[0] < size[0] and 0 <= newPos[1] < size[1]):
+        if(newPos in walls):
+            return copy_game
+        if(0 <= t[0] < size[0] and 0 <= t[1] < size[1]):
+            if(newPos in computers):
+                if(t in walls or t in computers):
+                    return copy_game
+                copy_game['computer'].remove(newPos)
+                copy_game['computer'].add(t)
+        if(newPos not in computers):
+            copy_game['player'] = newPos
+    return copy_game, size
 
 
 def dump_game(game):
@@ -93,7 +126,29 @@ def dump_game(game):
     print out the current state of your game for testing and debugging on your
     own. This function should not mutate the game.
     """
-    raise NotImplementedError
+    dic, size = game
+    res = []
+    walls = dic['wall']
+    computer = dic['computer']
+    target = dic['target']
+    player = dic['player']
+    for i in range(size[0]):
+        tmp = []
+        for j in range(size[1]):
+            to_add = []
+            if((i,j) in walls):
+                to_add.append('wall')
+            if((i,j) in computer):
+                to_add.append('computer')
+            if((i,j) in target):
+                to_add.append('target')
+            if((i,j) in player):
+                to_add.append('player')
+            tmp.append(to_add)
+        res.append(tmp)
+    return res
+
+
 
 
 def solve_puzzle(game):
@@ -111,11 +166,10 @@ def solve_puzzle(game):
 
 
 if __name__ == "__main__":
-    #level = [
-        #[[], ['wall'], ['computer']],
-        #[['target', 'player'], ['computer'], ['target']],
-    #]
-    #res = make_new_game(level)
-    #for row in res:
-        #print(row)
-    pass
+    level = [
+        [[], ['wall'], ['computer']],
+        [['target', 'player'], ['computer'], ['target']],
+    ]
+    res = make_new_game(level)
+    print(res)
+    
